@@ -1,0 +1,388 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "FriendViewer"
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 350, 0, 500)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -250)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 8)
+Corner.Parent = MainFrame
+local Shadow = Instance.new("ImageLabel")
+Shadow.Name = "Shadow"
+Shadow.Size = UDim2.new(1, 10, 1, 10)
+Shadow.Position = UDim2.new(0, -5, 0, -5)
+Shadow.BackgroundTransparency = 1
+Shadow.Image = "rbxassetid://1316045217"
+Shadow.ImageColor3 = Color3.new(0, 0, 0)
+Shadow.ImageTransparency = 0.8
+Shadow.ScaleType = Enum.ScaleType.Slice
+Shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+Shadow.ZIndex = -1
+Shadow.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Size = UDim2.new(1, 0, 0, 45)
+Title.Position = UDim2.new(0, 0, 0, 0)
+Title.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+Title.BorderSizePixel = 0
+Title.Text = "FRIEND CHECKER"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 16
+Title.Parent = MainFrame
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 8)
+TitleCorner.Parent = Title
+
+local CloseButton = Instance.new("ImageButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 25, 0, 25)
+CloseButton.Position = UDim2.new(1, -30, 0.5, -12)
+CloseButton.AnchorPoint = Vector2.new(0, 0.5)
+CloseButton.BackgroundTransparency = 1
+CloseButton.Image = "rbxassetid://3926305904"
+CloseButton.ImageRectOffset = Vector2.new(284, 4)
+CloseButton.ImageRectSize = Vector2.new(24, 24)
+CloseButton.Parent = Title
+
+CloseButton.MouseEnter:Connect(function()
+    TweenService:Create(CloseButton, TweenInfo.new(0.15), {
+        ImageColor3 = Color3.fromRGB(255, 80, 80)
+    }):Play()
+end)
+
+CloseButton.MouseLeave:Connect(function()
+    TweenService:Create(CloseButton, TweenInfo.new(0.15), {
+        ImageColor3 = Color3.fromRGB(255, 255, 255)
+    }):Play()
+end)
+
+local PlayerList = Instance.new("ScrollingFrame")
+PlayerList.Name = "PlayerList"
+PlayerList.Size = UDim2.new(1, -20, 1, -60)
+PlayerList.Position = UDim2.new(0, 10, 0, 50)
+PlayerList.BackgroundTransparency = 1
+PlayerList.ScrollBarThickness = 2
+PlayerList.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+PlayerList.Parent = MainFrame
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 5)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = PlayerList
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	PlayerList.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y)
+end)
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 8)
+UIListLayout.Parent = PlayerList
+
+local friendships = {}
+
+local function createPlayerButton(player)
+    local button = Instance.new("TextButton")
+    button.Name = player.Name
+    button.Size = UDim2.new(1, 0, 0, 60)
+    button.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    button.BorderSizePixel = 0
+    button.Text = ""
+    button.AutoButtonColor = false
+    button.Parent = PlayerList
+    local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 6)
+	Corner.Parent = button
+    local Layout = Instance.new("UIListLayout")
+    Layout.Padding = UDim.new(0, 5)
+    Layout.Parent = button
+    local DisplayNameLabel = Instance.new("TextLabel")
+    DisplayNameLabel.Name = "DisplayName"
+	DisplayNameLabel.Size = UDim2.new(1, -60, 0, 15)
+	DisplayNameLabel.Position = UDim2.new(0, 50, 0, 25)
+    DisplayNameLabel.BackgroundTransparency = 1
+    DisplayNameLabel.Text = "@" .. player.DisplayName
+    DisplayNameLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    DisplayNameLabel.Font = Enum.Font.Gotham
+    DisplayNameLabel.TextSize = 12
+    DisplayNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    DisplayNameLabel.Parent = button
+	local FriendCount = Instance.new("TextLabel")
+	FriendCount.Name = "FriendCount"
+	FriendCount.Size = UDim2.new(0, 60, 0, 18)
+	FriendCount.Position = UDim2.new(1, -65, 0, 5)
+	FriendCount.AnchorPoint = Vector2.new(0, 0)
+	FriendCount.BackgroundColor3 = Color3.fromRGB(45, 70, 50)
+	FriendCount.BackgroundTransparency = 1
+	FriendCount.Text = ""
+	FriendCount.TextColor3 = Color3.fromRGB(255, 255, 255)
+	FriendCount.Font = Enum.Font.GothamBold
+	FriendCount.TextSize = 0
+	FriendCount.TextXAlignment = Enum.TextXAlignment.Center
+	FriendCount.TextYAlignment = Enum.TextYAlignment.Center
+	FriendCount.ZIndex = 5
+	FriendCount.Parent = button
+    local Avatar = Instance.new("ImageLabel")
+    Avatar.Name = "Avatar"
+    Avatar.Size = UDim2.new(0, 40, 0, 40)
+    Avatar.Position = UDim2.new(0, 5, 0, 5)
+    Avatar.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+    Avatar.BorderSizePixel = 0
+    Avatar.Parent = button
+
+    local thumb = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+    Avatar.Image = thumb
+    local AvatarCorner = Instance.new("UICorner")
+    AvatarCorner.CornerRadius = UDim.new(0, 6)
+    AvatarCorner.Parent = Avatar
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.15), {
+            BackgroundColor3 = Color3.fromRGB(55, 55, 65)
+        }):Play()
+    end)
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.15), {
+            BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+        }):Play()
+    end)
+    coroutine.wrap(function()
+        local friendCount = 0
+        for _, otherPlayer in Players:GetPlayers() do
+            if otherPlayer ~= player then
+                local success, isFriend = pcall(function()
+                    return otherPlayer:IsFriendsWith(player.UserId)
+                end)
+                
+                if success and isFriend then
+                    friendCount = friendCount + 1
+                    local found = false
+                    for _, pair in ipairs(friendships) do
+                        if (pair[1] == player and pair[2] == otherPlayer) or (pair[1] == otherPlayer and pair[2] == player) then
+                            found = true
+                            break
+                        end
+                    end
+                    
+                    if not found then
+                        table.insert(friendships, {player, otherPlayer})
+                    end
+                end
+            end
+        end
+        FriendCount.Text = "Friends: " .. friendCount
+    end)()
+    button.MouseButton1Click:Connect(function()
+        local Popup = Instance.new("Frame")
+        Popup.Name = "FriendListPopup"
+        Popup.Size = UDim2.new(0, 300, 0, 400)
+        Popup.Position = UDim2.new(0.5, -150, 0.5, -200)
+        Popup.AnchorPoint = Vector2.new(0.5, 0.5)
+        Popup.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+        Popup.BorderSizePixel = 0
+        Popup.Parent = ScreenGui
+        local PopupCorner = Instance.new("UICorner")
+        PopupCorner.CornerRadius = UDim.new(0, 8)
+        PopupCorner.Parent = Popup
+        local PopupShadow = Instance.new("ImageLabel")
+        PopupShadow.Name = "Shadow"
+        PopupShadow.Size = UDim2.new(1, 10, 1, 10)
+        PopupShadow.Position = UDim2.new(0, -5, 0, -5)
+        PopupShadow.BackgroundTransparency = 1
+        PopupShadow.Image = "rbxassetid://1316045217"
+        PopupShadow.ImageColor3 = Color3.new(0, 0, 0)
+        PopupShadow.ImageTransparency = 0.8
+        PopupShadow.ScaleType = Enum.ScaleType.Slice
+        PopupShadow.SliceCenter = Rect.new(10, 10, 118, 118)
+        PopupShadow.ZIndex = -1
+        PopupShadow.Parent = Popup
+        local PopupTitle = Instance.new("TextLabel")
+        PopupTitle.Name = "Title"
+        PopupTitle.Size = UDim2.new(1, 0, 0, 40)
+        PopupTitle.Position = UDim2.new(0, 0, 0, 0)
+        PopupTitle.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+        PopupTitle.BorderSizePixel = 0
+        PopupTitle.Text = player.Name .. "'s Friends"
+        PopupTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+        PopupTitle.Font = Enum.Font.GothamBold
+        PopupTitle.TextSize = 16
+        PopupTitle.Parent = Popup
+        local PopupClose = Instance.new("ImageButton")
+        PopupClose.Name = "CloseButton"
+        PopupClose.Size = UDim2.new(0, 25, 0, 25)
+        PopupClose.Position = UDim2.new(1, -30, 0.5, -12)
+        PopupClose.AnchorPoint = Vector2.new(0, 0.5)
+        PopupClose.BackgroundTransparency = 1
+        PopupClose.Image = "rbxassetid://3926305904"
+        PopupClose.ImageRectOffset = Vector2.new(284, 4)
+        PopupClose.ImageRectSize = Vector2.new(24, 24)
+        PopupClose.Parent = PopupTitle
+        local FriendsScroll = Instance.new("ScrollingFrame")
+        FriendsScroll.Name = "FriendsScroll"
+        FriendsScroll.Size = UDim2.new(1, -10, 1, -50)
+        FriendsScroll.Position = UDim2.new(0, 5, 0, 45)
+        FriendsScroll.BackgroundTransparency = 1
+        FriendsScroll.ScrollBarThickness = 2
+        FriendsScroll.Parent = Popup
+        local FriendsLayout = Instance.new("UIListLayout")
+        FriendsLayout.Padding = UDim.new(0, 5)
+        FriendsLayout.Parent = FriendsScroll
+        local friendCount = 0
+        for _, otherPlayer in Players:GetPlayers() do
+            if otherPlayer ~= player then
+                local success, isFriend = pcall(function()
+                    return otherPlayer:IsFriendsWith(player.UserId)
+                end)
+                if success and isFriend then
+                    friendCount = friendCount + 1
+                    local friendEntry = Instance.new("TextButton")
+                    friendEntry.Name = otherPlayer.Name
+                    friendEntry.Size = UDim2.new(1, 0, 0, 40)
+                    friendEntry.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+                    friendEntry.BorderSizePixel = 0
+                    friendEntry.Text = ""
+                    friendEntry.AutoButtonColor = false
+                    friendEntry.Parent = FriendsScroll
+                    local FriendCorner = Instance.new("UICorner")
+                    FriendCorner.CornerRadius = UDim.new(0, 6)
+                    FriendCorner.Parent = friendEntry
+                    local FriendName = Instance.new("TextLabel")
+                    FriendName.Name = "Name"
+                    FriendName.Size = UDim2.new(1, -50, 1, 0)
+                    FriendName.Position = UDim2.new(0, 50, 0, 0)
+                    FriendName.BackgroundTransparency = 1
+                    FriendName.Text = otherPlayer.Name
+                    FriendName.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    FriendName.Font = Enum.Font.Gotham
+                    FriendName.TextSize = 14
+                    FriendName.TextXAlignment = Enum.TextXAlignment.Left
+                    FriendName.Parent = friendEntry
+                    local FriendAvatar = Instance.new("ImageLabel")
+                    FriendAvatar.Name = "Avatar"
+                    FriendAvatar.Size = UDim2.new(0, 30, 0, 30)
+                    FriendAvatar.Position = UDim2.new(0, 10, 0.5, -15)
+                    FriendAvatar.AnchorPoint = Vector2.new(0, 0.5)
+                    FriendAvatar.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+                    FriendAvatar.BorderSizePixel = 0
+                    FriendAvatar.Parent = friendEntry
+                    local thumb = Players:GetUserThumbnailAsync(otherPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+                    FriendAvatar.Image = thumb
+                    local AvatarCorner = Instance.new("UICorner")
+                    AvatarCorner.CornerRadius = UDim.new(0, 6)
+                    AvatarCorner.Parent = FriendAvatar
+                    friendEntry.MouseEnter:Connect(function()
+                        TweenService:Create(friendEntry, TweenInfo.new(0.15), {
+                            BackgroundColor3 = Color3.fromRGB(65, 65, 75)
+                        }):Play()
+                    end)
+                    friendEntry.MouseLeave:Connect(function()
+                        TweenService:Create(friendEntry, TweenInfo.new(0.15), {
+                            BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+                        }):Play()
+                    end)
+                end
+            end
+        end
+        if friendCount == 0 then
+            local noFriends = Instance.new("TextLabel")
+            noFriends.Size = UDim2.new(1, 0, 0, 40)
+            noFriends.Position = UDim2.new(0, 0, 0.5, -20)
+            noFriends.BackgroundTransparency = 1
+            noFriends.Text = "No friends in this server"
+            noFriends.TextColor3 = Color3.fromRGB(150, 150, 150)
+            noFriends.Font = Enum.Font.Gotham
+            noFriends.TextSize = 14
+            noFriends.Parent = FriendsScroll
+        end
+        
+        PopupClose.MouseButton1Click:Connect(function()
+            Popup:Destroy()
+        end)
+    end)
+end
+for _, player in ipairs(Players:GetPlayers()) do
+    createPlayerButton(player)
+end
+Players.PlayerAdded:Connect(function(player)
+    createPlayerButton(player)
+end)
+Players.PlayerRemoving:Connect(function(player)
+    local button = PlayerList:FindFirstChild(player.Name)
+    if button then
+        button:Destroy()
+    end
+
+    for i = #friendships, 1, -1 do
+        if friendships[i][1] == player or friendships[i][2] == player then
+            table.remove(friendships, i)
+        end
+    end
+end)
+
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+Title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+Title.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+local isFriendInServer = true
+
+for _, otherPlayer in ipairs(players:GetPlayers()) do
+	if player:IsFriendsWith(otherPlayer.UserId) then
+		isFriendInServer = true
+		break
+	end
+end
+
+--Currently broken too lazy to fix so placeholder
+if isFriendInServer then
+	button.BackgroundColor3 = Color3.fromRGB(45, 125, 80)
+else
+	button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+end
